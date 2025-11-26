@@ -109,15 +109,8 @@ def build_left_layout(self):
 
 def build_right_layout(self):
     """
-    右侧区域：配置区(tabview) + 小说主参数 + 可选功能按钮
+    右侧区域：小说主参数 + 可选功能按钮
     """
-    self.right_frame.grid_rowconfigure(0, weight=0)
-    self.right_frame.grid_rowconfigure(1, weight=1)
-    self.right_frame.grid_rowconfigure(2, weight=0)
+    self.right_frame.grid_rowconfigure(0, weight=1)
+    self.right_frame.grid_rowconfigure(1, weight=0)
     self.right_frame.columnconfigure(0, weight=1)
-
-    # 配置区（AI/Embedding）
-    self.config_frame = ctk.CTkFrame(self.right_frame, corner_radius=10, border_width=2, border_color="gray")
-    self.config_frame.grid(row=0, column=0, sticky="ew", padx=5, pady=5)
-    self.config_frame.columnconfigure(0, weight=1)
-    # 其余部分将在 config_tab.py 与 novel_params_tab.py 中构建

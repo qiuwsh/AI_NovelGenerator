@@ -547,30 +547,36 @@ def build_embeddings_config_tab(self):
     test_btn.grid(row=5, column=0, columnspan=2, padx=5, pady=5, sticky="ew")
 
 def build_config_choose_tab(self):
+    # 确定使用哪个容器（兼容新旧两种布局）
+    config_choose_container = getattr(self, 'config_choose', None) or getattr(self, 'config_choose_tab', None)
+    
+    if not config_choose_container:
+        print("错误：找不到配置选择容器")
+        return
 
-
-    self.config_choose.grid_rowconfigure(0, weight=0)
-    self.config_choose.grid_columnconfigure(0, weight=0)
-    self.config_choose.grid_columnconfigure(1, weight=1)
+    config_choose_container.grid_rowconfigure(0, weight=0)
+    config_choose_container.grid_columnconfigure(0, weight=0)
+    config_choose_container.grid_columnconfigure(1, weight=1)
     config_choose_options = list(self.loaded_config.get("llm_configs", {}).keys())
-    create_label_with_help(self, parent=self.config_choose, label_text="生成架构所用大模型", tooltip_key="architecture_llm_config", row=0, column=0, font=("Microsoft YaHei", 12))
-    architecture_dropdown = ctk.CTkOptionMenu(self.config_choose, values=config_choose_options, variable=self.architecture_llm_var, font=("Microsoft YaHei", 12))
+    
+    create_label_with_help(self, parent=config_choose_container, label_text="生成架构所用大模型", tooltip_key="architecture_llm_config", row=0, column=0, font=("Microsoft YaHei", 12))
+    architecture_dropdown = ctk.CTkOptionMenu(config_choose_container, values=config_choose_options, variable=self.architecture_llm_var, font=("Microsoft YaHei", 12))
     architecture_dropdown.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
 
-    create_label_with_help(self, parent=self.config_choose, label_text="生成大目录所用大模型", tooltip_key="chapter_outline_llm_config", row=1, column=0, font=("Microsoft YaHei", 12))
-    chapter_outline_dropdown = ctk.CTkOptionMenu(self.config_choose, values=config_choose_options, variable=self.chapter_outline_llm_var, font=("Microsoft YaHei", 12))
+    create_label_with_help(self, parent=config_choose_container, label_text="生成大目录所用大模型", tooltip_key="chapter_outline_llm_config", row=1, column=0, font=("Microsoft YaHei", 12))
+    chapter_outline_dropdown = ctk.CTkOptionMenu(config_choose_container, values=config_choose_options, variable=self.chapter_outline_llm_var, font=("Microsoft YaHei", 12))
     chapter_outline_dropdown.grid(row=1, column=1, padx=5, pady=5, sticky="nsew")
 
-    create_label_with_help(self, parent=self.config_choose, label_text="生成草稿所用大模型", tooltip_key="prompt_draft_llm_config", row=2, column=0, font=("Microsoft YaHei", 12))
-    prompt_draft_dropdown = ctk.CTkOptionMenu(self.config_choose, values=config_choose_options, variable=self.prompt_draft_llm_var, font=("Microsoft YaHei", 12))
+    create_label_with_help(self, parent=config_choose_container, label_text="生成草稿所用大模型", tooltip_key="prompt_draft_llm_config", row=2, column=0, font=("Microsoft YaHei", 12))
+    prompt_draft_dropdown = ctk.CTkOptionMenu(config_choose_container, values=config_choose_options, variable=self.prompt_draft_llm_var, font=("Microsoft YaHei", 12))
     prompt_draft_dropdown.grid(row=2, column=1, padx=5, pady=5, sticky="nsew")
 
-    create_label_with_help(self, parent=self.config_choose, label_text="定稿章节所用大模型", tooltip_key="final_chapter_llm_config", row=3, column=0, font=("Microsoft YaHei", 12))
-    final_chapter_dropdown = ctk.CTkOptionMenu(self.config_choose, values=config_choose_options, variable=self.final_chapter_llm_var, font=("Microsoft YaHei", 12))
+    create_label_with_help(self, parent=config_choose_container, label_text="定稿章节所用大模型", tooltip_key="final_chapter_llm_config", row=3, column=0, font=("Microsoft YaHei", 12))
+    final_chapter_dropdown = ctk.CTkOptionMenu(config_choose_container, values=config_choose_options, variable=self.final_chapter_llm_var, font=("Microsoft YaHei", 12))
     final_chapter_dropdown.grid(row=3, column=1, padx=5, pady=5, sticky="nsew")
 
-    create_label_with_help(self, parent=self.config_choose, label_text="一致性审校所用大模型", tooltip_key="consistency_review_llm_config", row=4, column=0, font=("Microsoft YaHei", 12))
-    consistency_review_dropdown = ctk.CTkOptionMenu(self.config_choose, values=config_choose_options, variable=self.consistency_review_llm_var, font=("Microsoft YaHei", 12))
+    create_label_with_help(self, parent=config_choose_container, label_text="一致性审校所用大模型", tooltip_key="consistency_review_llm_config", row=4, column=0, font=("Microsoft YaHei", 12))
+    consistency_review_dropdown = ctk.CTkOptionMenu(config_choose_container, values=config_choose_options, variable=self.consistency_review_llm_var, font=("Microsoft YaHei", 12))
     consistency_review_dropdown.grid(row=4, column=1, padx=5, pady=5, sticky="nsew")
 
     def save_config_choose():
@@ -598,7 +604,7 @@ def build_config_choose_tab(self):
                 dropdown.cget("variable").set(config_names[0])
 
     save_btn = ctk.CTkButton(
-        self.config_choose, 
+        config_choose_container, 
         text="保存配置", 
         command=save_config_choose,
         font=("Microsoft YaHei", 12)
@@ -606,7 +612,7 @@ def build_config_choose_tab(self):
     save_btn.grid(row=10, column=0,padx=2, pady=2, sticky="ew")
 
     refresh_btn = ctk.CTkButton(
-        self.config_choose, 
+        config_choose_container, 
         text="刷新配置", 
         command=refresh_config_dropdowns,
         font=("Microsoft YaHei", 12)

@@ -16,7 +16,7 @@ from tooltips import tooltips
 
 from ui.context_menu import TextWidgetContextMenu
 from ui.main_tab import build_main_tab, build_left_layout, build_right_layout
-from ui.config_tab import build_config_tabview, load_config_btn, save_config_btn
+from ui.config_tab import load_config_btn, save_config_btn
 from ui.novel_params_tab import build_novel_params_area, build_optional_buttons_area
 from ui.generation_handlers import (
     generate_novel_architecture_ui,
@@ -35,6 +35,7 @@ from ui.character_tab import build_character_tab, load_character_state, save_cha
 from ui.summary_tab import build_summary_tab, load_global_summary, save_global_summary
 from ui.chapters_tab import build_chapters_tab, refresh_chapters_list, on_chapter_selected, load_chapter_content, save_current_chapter, prev_chapter, next_chapter
 from ui.other_settings import build_other_settings_tab
+from ui.llm_settings_tab import build_llm_settings_tab
 
 
 class NovelGeneratorGUI:
@@ -44,12 +45,10 @@ class NovelGeneratorGUI:
     def __init__(self, master):
         self.master = master
         self.master.title("AI小说生成器")
-        try:
-            if os.path.exists("icon.ico"):
-                self.master.iconbitmap("icon.ico")
-        except Exception:
-            pass
         self.master.geometry("1350x840")
+        
+        # 设置应用图标 - 支持 macOS
+        self._set_app_icon()
 
         # --------------- 配置文件路径 ---------------
         self.config_file = "config.json"
@@ -169,16 +168,252 @@ class NovelGeneratorGUI:
 
         # 创建各个标签页
         build_main_tab(self)
-        build_config_tabview(self)
-        build_novel_params_area(self, start_row=1)
-        build_optional_buttons_area(self, start_row=2)
+        build_novel_params_area(self, start_row=0)  # 移到主功能标签页内
+        build_optional_buttons_area(self, start_row=1)
+        build_llm_settings_tab(self)  # 新的独立大模型设置
         build_setting_tab(self)
         build_directory_tab(self)
         build_character_tab(self)
         build_summary_tab(self)
         build_chapters_tab(self)
         build_other_settings_tab(self)
+        
+        # UI 构建完成后，加载上次保存的小说设置
+        self._load_novel_settings_on_startup()
 
+
+    def _set_app_icon(self):
+        """
+        设置应用图标，支持不同平台
+        """
+        try:
+            # 尝试不同的图标格式，优先使用更适合当前平台的格式
+            icon_paths = [
+                "icon.icns",    # macOS 专用格式
+                "icon.png",     # 通用 PNG 格式  
+                "icon.ico",     # Windows 专用格式
+                "assets/icon.png",  # 资源文件夹中的 PNG
+                "assets/icon.icns"  # 资源文件夹中的 ICNS
+            ]
+            
+            icon_set = False
+            
+            # 对于 macOS，优先尝试使用 PhotoImage 设置 PNG 图标
+            if hasattr(self.master, 'tk') and os.path.exists("icon.png"):
+                try:
+                    icon_image = tk.PhotoImage(file="icon.png")
+                    self.master.iconphoto(True, icon_image)
+                    icon_set = True
+                except Exception:
+                    pass
+            
+            # 如果 PNG 设置失败或不存在，尝试其他格式
+            if not icon_set:
+                for icon_path in icon_paths:
+                    if os.path.exists(icon_path):
+                        try:
+                            if icon_path.endswith('.ico'):
+                                # 对于 .ico 文件，使用 iconbitmap
+                                self.master.iconbitmap(icon_path)
+                            elif icon_path.endswith('.png'):
+                                # 对于 PNG 文件，使用 PhotoImage
+                                icon_image = tk.PhotoImage(file=icon_path)
+                                self.master.iconphoto(True, icon_image)
+                            elif icon_path.endswith('.icns'):
+                                # 对于 ICNS 文件，在 macOS 上可以使用 iconbitmap
+                                self.master.iconbitmap(icon_path)
+                            icon_set = True
+                            break
+                        except Exception:
+                            continue
+            
+            # 如果没有找到合适的图标文件，创建一个简单的默认图标
+            if not icon_set:
+                try:
+                    # 创建一个简单的彩色图标作为备用
+                    from PIL import Image, ImageDraw
+                    img_size = (64, 64)
+                    img = Image.new('RGBA', img_size, color=(52, 152, 219, 255))  # 蓝色背景
+                    draw = ImageDraw.Draw(img)
+                    
+                    # 绘制简单的 "AI" 文字
+                    text = "AI"
+                    try:
+                        bbox = draw.textbbox((0, 0), text)
+                        text_width = bbox[2] - bbox[0]
+                        text_height = bbox[3] - bbox[1]
+                    except:
+                        text_width, text_height = 30, 20
+                    
+                    x = (img_size[0] - text_width) // 2
+                    y = (img_size[1] - text_height) // 2
+                    draw.text((x, y), text, fill=(255, 255, 255, 255))
+                    
+                    # 保存临时图标文件
+                    temp_icon_path = "temp_app_icon.png"
+                    img.save(temp_icon_path)
+                    
+                    # 设置为应用图标
+                    icon_image = tk.PhotoImage(file=temp_icon_path)
+                    self.master.iconphoto(True, icon_image)
+                    
+                    # 删除临时文件
+                    try:
+                        os.remove(temp_icon_path)
+                    except:
+                        pass
+                        
+                except ImportError:
+                    # 如果没有 PIL，跳过自定义图标创建
+                    pass
+                except Exception:
+                    pass
+                    
+        except Exception:
+            # 如果所有方法都失败，静默失败，不影响应用启动
+            pass
+
+    def _load_novel_settings_on_startup(self):
+        """
+        在 UI 构建完成后自动加载上次保存的小说设置
+        """
+        try:
+            if not self.loaded_config or "other_params" not in self.loaded_config:
+                return
+                
+            other_params = self.loaded_config["other_params"]
+            
+            # 加载主题
+            if hasattr(self, 'topic_text') and other_params.get("topic", "").strip():
+                self.topic_text.delete("0.0", "end")
+                self.topic_text.insert("0.0", other_params["topic"])
+            
+            # 加载类型 (已经通过 StringVar 绑定自动加载，这里确保显示正确)
+            if hasattr(self, 'genre_var') and other_params.get("genre", "").strip():
+                self.genre_var.set(other_params["genre"])
+            
+            # 加载章节数和字数 (已经通过 StringVar 绑定自动加载)
+            if hasattr(self, 'num_chapters_var') and other_params.get("num_chapters"):
+                self.num_chapters_var.set(str(other_params["num_chapters"]))
+            
+            if hasattr(self, 'word_number_var') and other_params.get("word_number"):
+                self.word_number_var.set(str(other_params["word_number"]))
+            
+            # 加载保存路径
+            if hasattr(self, 'filepath_var') and other_params.get("filepath", "").strip():
+                self.filepath_var.set(other_params["filepath"])
+            
+            # 加载当前章节号
+            if hasattr(self, 'chapter_num_var') and other_params.get("chapter_num", "").strip():
+                self.chapter_num_var.set(other_params["chapter_num"])
+            
+            # 加载用户指导
+            if hasattr(self, 'user_guide_text') and other_params.get("user_guidance", "").strip():
+                self.user_guide_text.delete("0.0", "end")
+                self.user_guide_text.insert("0.0", other_params["user_guidance"])
+            
+            # 加载核心人物
+            if hasattr(self, 'char_inv_text') and other_params.get("characters_involved", "").strip():
+                self.char_inv_text.delete("0.0", "end")
+                self.char_inv_text.insert("0.0", other_params["characters_involved"])
+            
+            # 加载其他字段 (已经通过 StringVar 绑定自动加载)
+            if hasattr(self, 'key_items_var') and other_params.get("key_items", "").strip():
+                self.key_items_var.set(other_params["key_items"])
+            
+            if hasattr(self, 'scene_location_var') and other_params.get("scene_location", "").strip():
+                self.scene_location_var.set(other_params["scene_location"])
+            
+            if hasattr(self, 'time_constraint_var') and other_params.get("time_constraint", "").strip():
+                self.time_constraint_var.set(other_params["time_constraint"])
+            
+            # 可选：在日志中显示加载信息
+            if hasattr(self, 'log'):
+                self.log("已自动加载上次的小说设置。")
+                
+        except Exception as e:
+            # 如果加载失败，不影响应用启动
+            print(f"加载小说设置失败: {e}")
+            if hasattr(self, 'log'):
+                self.log(f"加载小说设置失败: {e}")
+
+    def auto_save_novel_settings(self, field_name=None):
+        """
+        自动保存小说设置到配置文件
+        """
+        try:
+            if not hasattr(self, 'loaded_config') or not self.loaded_config:
+                return
+                
+            # 确保配置文件中有 other_params 节
+            if "other_params" not in self.loaded_config:
+                self.loaded_config["other_params"] = {}
+                
+            other_params = self.loaded_config["other_params"]
+            
+            # 从UI组件获取当前值
+            if hasattr(self, 'topic_text'):
+                other_params["topic"] = self.topic_text.get("0.0", "end").strip()
+            
+            if hasattr(self, 'genre_var'):
+                other_params["genre"] = self.genre_var.get()
+                
+            if hasattr(self, 'num_chapters_var'):
+                other_params["num_chapters"] = self.safe_get_int(self.num_chapters_var, 10)
+                
+            if hasattr(self, 'word_number_var'):
+                other_params["word_number"] = self.safe_get_int(self.word_number_var, 3000)
+                
+            if hasattr(self, 'filepath_var'):
+                other_params["filepath"] = self.filepath_var.get()
+                
+            if hasattr(self, 'chapter_num_var'):
+                other_params["chapter_num"] = self.chapter_num_var.get()
+                
+            if hasattr(self, 'user_guide_text'):
+                other_params["user_guidance"] = self.user_guide_text.get("0.0", "end").strip()
+                
+            if hasattr(self, 'char_inv_text'):
+                other_params["characters_involved"] = self.char_inv_text.get("0.0", "end").strip()
+                
+            if hasattr(self, 'key_items_var'):
+                other_params["key_items"] = self.key_items_var.get()
+                
+            if hasattr(self, 'scene_location_var'):
+                other_params["scene_location"] = self.scene_location_var.get()
+                
+            if hasattr(self, 'time_constraint_var'):
+                other_params["time_constraint"] = self.time_constraint_var.get()
+            
+            # 保存到文件
+            from config_manager import save_config
+            save_config(self.loaded_config, self.config_file)
+            
+        except Exception as e:
+            # 自动保存失败时不要打扰用户
+            print(f"自动保存失败: {e}")
+
+    def save_novel_settings(self):
+        """
+        手动保存小说设置到配置文件，并给用户反馈
+        """
+        try:
+            self.auto_save_novel_settings()
+            
+            # 在日志中显示成功消息
+            if hasattr(self, 'log'):
+                self.log("✅ 小说设置已保存！")
+                
+            # 显示成功提示
+            from tkinter import messagebox
+            messagebox.showinfo("保存成功", "小说设置已保存到配置文件。\n下次启动时会自动加载这些设置。")
+                
+        except Exception as e:
+            # 显示错误消息
+            from tkinter import messagebox
+            messagebox.showerror("保存失败", f"保存设置时出错：{str(e)}")
+            if hasattr(self, 'log'):
+                self.log(f"❌ 保存设置失败: {e}")
 
     # ----------------- 通用辅助函数 -----------------
     def show_tooltip(self, key: str):

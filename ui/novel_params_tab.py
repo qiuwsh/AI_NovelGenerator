@@ -6,8 +6,13 @@ from ui.context_menu import TextWidgetContextMenu
 from tooltips import tooltips
 
 def build_novel_params_area(self, start_row=1):
-    self.params_frame = ctk.CTkScrollableFrame(self.right_frame, orientation="vertical")
-    self.params_frame.grid(row=start_row, column=0, sticky="nsew", padx=5, pady=5)
+    # 构建在main_tab的右侧框架中
+    if start_row == 0:  # 如果在主功能标签页中
+        self.params_frame = ctk.CTkScrollableFrame(self.right_frame, orientation="vertical")
+        self.params_frame.grid(row=start_row, column=0, sticky="nsew", padx=5, pady=5)
+    else:  # 原有逻辑
+        self.params_frame = ctk.CTkScrollableFrame(self.right_frame, orientation="vertical")
+        self.params_frame.grid(row=start_row, column=0, sticky="nsew", padx=5, pady=5)
     self.params_frame.columnconfigure(1, weight=1)
 
     # 1) 主题(Topic)
@@ -17,6 +22,15 @@ def build_novel_params_area(self, start_row=1):
     self.topic_text.grid(row=0, column=1, padx=5, pady=5, sticky="nsew")
     if hasattr(self, 'topic_default') and self.topic_default:
         self.topic_text.insert("0.0", self.topic_default)
+    
+    # 添加自动保存功能 - 使用StringVar跟踪
+    self.topic_var = ctk.StringVar(value="")
+    def on_topic_change(*args):
+        # 保存到StringVar并触发自动保存
+        self.topic_var.set(self.topic_text.get("0.0", "end").strip())
+        self.auto_save_novel_settings("topic")
+    self.topic_text.bind("<KeyRelease>", on_topic_change)
+    self.topic_text.bind("<ButtonRelease>", on_topic_change)
 
     # 2) 类型(Genre)
     create_label_with_help_for_novel_params(self, parent=self.params_frame, label_text="类型(Genre):", tooltip_key="genre", row=1, column=0, font=("Microsoft YaHei", 12))
@@ -63,6 +77,12 @@ def build_novel_params_area(self, start_row=1):
     self.user_guide_text.grid(row=row_user_guide, column=1, padx=5, pady=5, sticky="nsew")
     if hasattr(self, 'user_guidance_default') and self.user_guidance_default:
         self.user_guide_text.insert("0.0", self.user_guidance_default)
+    
+    # 添加自动保存功能
+    def on_user_guide_change(event=None):
+        self.auto_save_novel_settings("user_guidance")
+    self.user_guide_text.bind("<KeyRelease>", on_user_guide_change)
+    self.user_guide_text.bind("<ButtonRelease>", on_user_guide_change)
 
     # 7) 可选元素：核心人物/关键道具/空间坐标/时间压力
     row_idx = 6
@@ -79,6 +99,12 @@ def build_novel_params_area(self, start_row=1):
     self.char_inv_text.grid(row=0, column=0, padx=(0,5), pady=5, sticky="nsew")
     if hasattr(self, 'characters_involved_var'):
         self.char_inv_text.insert("0.0", self.characters_involved_var.get())
+    
+    # 添加自动保存功能
+    def on_char_inv_change(event=None):
+        self.auto_save_novel_settings("characters_involved")
+    self.char_inv_text.bind("<KeyRelease>", on_char_inv_change)
+    self.char_inv_text.bind("<ButtonRelease>", on_char_inv_change)
     
     # 导入按钮
     import_btn = ctk.CTkButton(char_inv_frame, text="导入", width=60, 
@@ -126,6 +152,12 @@ def build_optional_buttons_area(self, start_row=2):
         font=("Microsoft YaHei", 12), width=100
     )
     self.plot_arcs_btn.grid(row=0, column=3, padx=5, pady=5, sticky="ew")
+
+    self.save_settings_btn = ctk.CTkButton(
+        self.optional_btn_frame, text="保存设置", fg_color="green", hover_color="darkgreen",
+        command=self.save_novel_settings, font=("Microsoft YaHei", 12), width=100
+    )
+    self.save_settings_btn.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
 
     # 新增角色库按钮
     self.role_library_btn = ctk.CTkButton(
