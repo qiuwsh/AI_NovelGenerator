@@ -43,7 +43,7 @@ class NovelGeneratorGUI:
     """
     def __init__(self, master):
         self.master = master
-        self.master.title("Novel Generator GUI")
+        self.master.title("AI小说生成器")
         try:
             if os.path.exists("icon.ico"):
                 self.master.iconbitmap("icon.ico")
@@ -348,7 +348,7 @@ class NovelGeneratorGUI:
             self.char_inv_text.insert("0.0", ", ".join(selected))
             import_window.destroy()
             
-        btn_confirm = ctk.CTkButton(btn_frame, text="选择", command=confirm_selection)
+        btn_confirm = ctk.CTkButton(btn_frame, text="确认选择", command=confirm_selection)
         btn_confirm.pack(side="left", padx=20)
         
         # 取消按钮

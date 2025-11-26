@@ -2,17 +2,26 @@
 # -*- coding: utf-8 -*-
 import os
 import json
+import logging
 
 def read_file(filename: str) -> str:
     """读取文件的全部内容，若文件不存在或异常则返回空字符串。"""
     try:
+        if not os.path.exists(filename):
+            logging.debug(f"文件不存在: {filename}")
+            return ""
+            
         with open(filename, 'r', encoding='utf-8') as file:
             content = file.read()
         return content
     except FileNotFoundError:
+        logging.debug(f"文件未找到: {filename}")
+        return ""
+    except UnicodeDecodeError as e:
+        logging.error(f"[read_file] 文件编码错误 {filename}: {e}")
         return ""
     except Exception as e:
-        print(f"[read_file] 读取文件时发生错误: {e}")
+        logging.error(f"[read_file] 读取文件时发生错误 {filename}: {e}")
         return ""
 
 def append_text_to_file(text_to_append: str, file_path: str):

@@ -36,9 +36,7 @@
 确保满足以下运行条件：
 - **Python 3.9+** 运行环境（推荐3.10-3.12之间）
 - **pip** 包管理工具
-- 有效API密钥：
-  - 云端服务：OpenAI / DeepSeek 等
-  - 本地服务：Ollama 等兼容 OpenAI 的接口
+- **本地Ollama服务**（推荐，无需API密钥）或在线服务API密钥
 
 ---
 
@@ -54,18 +52,41 @@
    - 如果对某些包无法正常安装，访问 [Visual Studio Build Tools](https://visualstudio.microsoft.com/zh-hans/visual-cpp-build-tools/) 下载并安装C++编译工具，用于构建部分模块包；
    - 安装时，默认只包含 MSBuild 工具，需手动勾选左上角列表栏中的 **C++ 桌面开发** 选项。
 
-3. **安装依赖并运行**  
+3. **安装Ollama（推荐）**  
+   - 安装Ollama（本地运行，无需API密钥）：
+     ```bash
+     # macOS
+     curl -fsSL https://ollama.com/install.sh | sh
+     
+     # 或访问 https://ollama.com/download 下载
+     ```
+   - 下载推荐模型：
+     ```bash
+     ollama pull gpt-oss:120b
+     ollama pull nomic-embed-text:137m-v1.5-fp16
+     ```
+   - 启动Ollama服务：
+     ```bash
+     ollama serve
+     ```
+
+4. **安装依赖并运行**  
    - 打开终端，进入项目源文件目录：
      ```bash
      cd AI_NovelGenerator
      ```
-   - 安装项目依赖：
+   - 激活conda环境并安装依赖：
      ```bash
+     conda activate myenv313
      pip install -r requirements.txt
      ```
-   - 安装完成后，运行主程序：
+   - 运行程序（两种方式）：
      ```bash
+     # 方式1：直接运行
      python main.py
+     
+     # 方式2：使用启动脚本（自动检查）
+     python start.py
      ```
 
 >如果缺失部分依赖，后续**手动执行**
@@ -94,25 +115,29 @@ novel-generator/
 ---
 
 ## ⚙️ 配置指南
-### 📌 基础配置（config.json）
+### 🎯 快速配置（默认使用本地Ollama）
+
+程序默认配置为使用本地Ollama，**无需API密钥**，首次运行会自动创建配置文件。
+
+#### 方式1：本地Ollama（推荐，默认）
 ```json
 {
-    "api_key": "sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    "base_url": "https://api.openai.com/v1",
-    "interface_format": "OpenAI",
-    "model_name": "gpt-4o-mini",
+    "api_key": "ollama",
+    "base_url": "http://localhost:11434/v1",
+    "model_name": "gpt-oss:120b",
     "temperature": 0.7,
-    "max_tokens": 4096,
-    "embedding_api_key": "sk-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
-    "embedding_interface_format": "OpenAI",
-    "embedding_url": "https://api.openai.com/v1",
-    "embedding_model_name": "text-embedding-ada-002",
-    "embedding_retrieval_k": 4,
-    "topic": "星穹铁道主角星穿越到原神提瓦特大陆，拯救提瓦特大陆，并与其中的角色展开爱恨情仇的小说",
-    "genre": "玄幻",
-    "num_chapters": 120,
-    "word_number": 4000,
-    "filepath": "D:/AI_NovelGenerator/filepath"
+    "max_tokens": 8192
+}
+```
+
+#### 方式2：DeepSeek在线服务
+```json
+{
+    "api_key": "sk-你的DeepSeek密钥",
+    "base_url": "https://api.deepseek.com/v1", 
+    "model_name": "deepseek-chat",
+    "temperature": 0.7,
+    "max_tokens": 8192
 }
 ```
 

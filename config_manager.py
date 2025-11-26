@@ -9,25 +9,41 @@ from embedding_adapters import create_embedding_adapter
 
 def load_config(config_file: str) -> dict:
     """从指定的 config_file 加载配置，若不存在则创建一个默认配置文件。"""
-
-    # PenBo 修改代码，增加配置文件不存在则创建一个默认配置文件
+    
     if not os.path.exists(config_file):
-        create_config(config_file)
+        return create_config(config_file)
 
     try:
         with open(config_file, 'r', encoding='utf-8') as f:
-            return json.load(f)
-    except:
-            return {}
+            config = json.load(f)
+            # 验证配置文件的完整性
+            if not isinstance(config, dict):
+                raise ValueError("配置文件格式错误")
+            return config
+    except json.JSONDecodeError as e:
+        print(f"配置文件JSON格式错误: {e}")
+        return create_config(config_file)
+    except Exception as e:
+        print(f"加载配置文件失败: {e}")
+        return {}
 
 
 # PenBo 增加了创建默认配置文件函数
 def create_config(config_file: str) -> dict:
     """创建一个创建默认配置文件。"""
     config = {
-    "last_interface_format": "OpenAI",
-    "last_embedding_interface_format": "OpenAI",
+    "last_interface_format": "Ollama",
+    "last_embedding_interface_format": "Ollama",
     "llm_configs": {
+        "本地 Ollama": {
+            "api_key": "ollama",
+            "base_url": "http://localhost:11434/v1",
+            "model_name": "gpt-oss:120b",
+            "temperature": 0.7,
+            "max_tokens": 8192,
+            "timeout": 600,
+            "interface_format": "OpenAI"
+        },
         "DeepSeek V3": {
             "api_key": "",
             "base_url": "https://api.deepseek.com/v1",
@@ -36,31 +52,20 @@ def create_config(config_file: str) -> dict:
             "max_tokens": 8192,
             "timeout": 600,
             "interface_format": "OpenAI"
-        },
-        "GPT 5": {
-            "api_key": "",
-            "base_url": "https://api.openai.com/v1",
-            "model_name": "gpt-5",
-            "temperature": 0.7,
-            "max_tokens": 32768,
-            "timeout": 600,
-            "interface_format": "OpenAI"
-        },
-        "Gemini 2.5 Pro": {
-            "api_key": "",
-            "base_url": "https://generativelanguage.googleapis.com/v1beta/openai",
-            "model_name": "gemini-2.5-pro",
-            "temperature": 0.7,
-            "max_tokens": 32768,
-            "timeout": 600,
-            "interface_format": "OpenAI"
         }
     },
     "embedding_configs": {
-        "OpenAI": {
+        "Ollama": {
+            "api_key": "ollama",
+            "base_url": "http://localhost:11434/v1",
+            "model_name": "nomic-embed-text:137m-v1.5-fp16",
+            "retrieval_k": 4,
+            "interface_format": "OpenAI"
+        },
+        "DeepSeek": {
             "api_key": "",
-            "base_url": "https://api.openai.com/v1",
-            "model_name": "text-embedding-ada-002",
+            "base_url": "https://api.deepseek.com/v1",
+            "model_name": "deepseek-chat",
             "retrieval_k": 4,
             "interface_format": "OpenAI"
         }
@@ -79,11 +84,11 @@ def create_config(config_file: str) -> dict:
         "time_constraint": ""
     },
     "choose_configs": {
-        "prompt_draft_llm": "DeepSeek V3",
-        "chapter_outline_llm": "DeepSeek V3",
-        "architecture_llm": "Gemini 2.5 Pro",
-        "final_chapter_llm": "GPT 5",
-        "consistency_review_llm": "DeepSeek V3"
+        "prompt_draft_llm": "本地 Ollama",
+        "chapter_outline_llm": "本地 Ollama",
+        "architecture_llm": "本地 Ollama",
+        "final_chapter_llm": "本地 Ollama",
+        "consistency_review_llm": "本地 Ollama"
     },
     "proxy_setting": {
         "proxy_url": "127.0.0.1",
@@ -97,6 +102,7 @@ def create_config(config_file: str) -> dict:
     }
 }
     save_config(config, config_file)
+    return config
 
 
 

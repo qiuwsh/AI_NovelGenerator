@@ -10,7 +10,7 @@ from xml.etree import ElementTree as ET
 import shutil
 import time
 def build_other_settings_tab(self):
-    self.other_settings_tab = self.tabview.add("Other Settings")
+    self.other_settings_tab = self.tabview.add("其他设置")
     self.other_settings_tab.rowconfigure(0, weight=1)
     self.other_settings_tab.columnconfigure(0, weight=1)
     if "webdav_config" not in self.loaded_config:
