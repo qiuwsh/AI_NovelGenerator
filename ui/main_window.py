@@ -33,7 +33,7 @@ from ui.setting_tab import build_setting_tab, load_novel_architecture, save_nove
 from ui.directory_tab import build_directory_tab, load_chapter_blueprint, save_chapter_blueprint
 from ui.character_tab import build_character_tab, load_character_state, save_character_state
 from ui.summary_tab import build_summary_tab, load_global_summary, save_global_summary
-from ui.chapters_tab import build_chapters_tab, refresh_chapters_list, on_chapter_selected, load_chapter_content, save_current_chapter, prev_chapter, next_chapter
+from ui.chapters_tab import build_chapters_tab, refresh_chapters_list, on_chapter_selected, load_chapter_content, save_current_chapter, prev_chapter, next_chapter, export_to_epub
 from ui.other_settings import build_other_settings_tab
 from ui.llm_settings_tab import build_llm_settings_tab
 
@@ -639,6 +639,7 @@ class NovelGeneratorGUI:
     save_current_chapter = save_current_chapter
     prev_chapter = prev_chapter
     next_chapter = next_chapter
+    export_to_epub = export_to_epub
     test_llm_config = test_llm_config
     test_embedding_config = test_embedding_config
     browse_folder = browse_folder

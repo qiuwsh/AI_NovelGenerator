@@ -36,6 +36,11 @@ def build_chapters_tab(self):
     refresh_btn = ctk.CTkButton(top_frame, text="刷新章节列表", command=self.refresh_chapters_list, font=("Microsoft YaHei", 12))
     refresh_btn.grid(row=0, column=5, padx=5, pady=5, sticky="e")
 
+    # EPUB导出按钮
+    epub_export_btn = ctk.CTkButton(top_frame, text="导出为EPUB", command=self.export_to_epub, 
+                                   font=("Microsoft YaHei", 12), fg_color="#2E8B57", hover_color="#3CB371")
+    epub_export_btn.grid(row=0, column=6, padx=5, pady=5, sticky="e")
+
     self.chapters_word_count_label = ctk.CTkLabel(top_frame, text="字数：0", font=("Microsoft YaHei", 12))
     self.chapters_word_count_label.grid(row=0, column=4, padx=(0,10), sticky="e")
 
@@ -138,3 +143,55 @@ def next_chapter(self):
         load_chapter_content(self, self.chapters_list[new_idx])
     else:
         messagebox.showinfo("提示", "已经是最后一章了。")
+
+def export_to_epub(self):
+    """导出整个小说为EPUB格式"""
+    try:
+        from epub_exporter import export_novel_to_epub
+        
+        filepath = self.filepath_var.get().strip()
+        if not filepath:
+            messagebox.showwarning("警告", "请先设置保存路径")
+            return
+        
+        # 检查是否有章节
+        chapters_dir = os.path.join(filepath, "chapters")
+        if not os.path.exists(chapters_dir):
+            messagebox.showwarning("警告", "没有找到章节文件夹，请先生成章节")
+            return
+        
+        # 获取小说标题（从配置或用户输入）
+        novel_title = "AI生成小说"
+        if hasattr(self, 'topic_text'):
+            title_text = self.topic_text.get("0.0", "end").strip()
+            if title_text:
+                novel_title = title_text
+        
+        # 弹出保存对话框
+        from tkinter import filedialog
+        output_file = filedialog.asksaveasfilename(
+            title="保存EPUB文件",
+            defaultextension=".epub",
+            filetypes=[("EPUB文件", "*.epub"), ("所有文件", "*.*")],
+            initialfile=f"{novel_title}.epub"
+        )
+        
+        if not output_file:
+            return  # 用户取消了保存
+        
+        # 显示进度信息
+        self.safe_log("正在导出EPUB文件，请稍候...")
+        
+        # 导出EPUB
+        success = export_novel_to_epub(filepath, output_file, novel_title)
+        
+        if success:
+            self.safe_log(f"✅ EPUB导出成功: {output_file}")
+            messagebox.showinfo("导出成功", f"EPUB文件已成功导出到:\n{output_file}")
+        else:
+            self.safe_log("❌ EPUB导出失败，请检查日志信息")
+            messagebox.showerror("导出失败", "EPUB导出失败，请检查控制台日志")
+            
+    except Exception as e:
+        self.safe_log(f"❌ EPUB导出出错: {e}")
+        messagebox.showerror("导出错误", f"导出过程中出现错误:\n{str(e)}")
